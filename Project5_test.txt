@@ -1,0 +1,149 @@
+?- query([14, *, 5, <, 70]).
+
+/* expected result:
+false.
+*/
+
+?- query([27, <, 28, &&, 5, <=, 5, &&, 8, <=, 11]).
+
+/* expected result:
+true ;
+false
+*/
+
+?- query([33, -, 4, *, [1, +, 5], =, 9]).
+
+/* expected result:
+true ;
+false.
+*/
+
+?- generate_instances(5,X,7).
+
+/* expected result:
+X = 5 ;
+X = 6 ;
+X = 7 ;
+false.
+*/
+
+?- query([find(1,Q,10), Q, *, Q, =, 49]).
+
+/* expected result:
+Q = 7;
+false.
+*/
+
+?- query([find(2,X,10), [X, *, X, *, X, -, 8, *, X, *, X], +, 15, *, X, =, 0]).
+
+/* expected result:
+X = 3 ;
+X = 5 ;
+false.
+*/
+
+?- query([find(0,Y,9), find(0,Z,9), Y, +, 4, *, Z, =, 12]).
+
+/* expected result:   
+Y = 0, Z = 3;
+Y = 4, Z = 2;
+Y = 8, Z = 1;
+false.
+*/
+
+?- query([find(0,Y,9), find(0,Z,9), [Y, +, 4], *, Z, =, 12]).
+
+/* expected result:
+Y = 0, Z = 3;
+Y = 2, Z = 2;  (written Y = Z, Z = 2)
+Y = 8, Z = 1;
+false.
+*/
+
+?- query([find(1,X,15), find(1,Y,15), find(1,Z,15), 
+       [X, *, X, +, Y, *, Y, =, Z, *, Z, &&, X, <=, Y]]).
+
+/* expected result:
+X =  3, Y =  4, Z =  5;
+X =  5, Y = 12, Z = 13;
+X =  6, Y =  8, Z = 10;
+X =  9, Y = 12, Z = 15;
+false.
+*/
+
+?- query([find(1,X,18), find(1,Y,18), find(1,Z,18), find(1,W,18), 
+      [X, <=, Y, &&, Z, <=, W, &&, X, <, Z, &&,
+       X, *, X, *, X, +, Y, *, Y, *, Y, =, Z, *, Z, *, Z, +, W, *, W, *, W]]).
+
+/* expected result:
+X =  1, Y = 12, Z = 9, W = 10;
+X =  2, Y = 16, Z = 9, W = 15;
+false.
+*/
+
+?- query([find(1,X,20), [18, <, X, '||', X, <, 3]]).
+
+/* expected result:
+X = 1 ;
+X = 2 ;
+X = 19 ;
+X = 20 ;
+false.
+*/
+
+?- query([find(0,X,5), find(0,Y,5), [X, =, 3, '||', Y, <, 4, &&, X, +, Y, =, 5]]).
+
+/* expected result:   
+X = 2, Y = 3;
+X = 3, Y = 0;
+X = 3, Y = 1;
+X = 3, Y = 2;
+X = 3, Y = 2;
+X = 3, Y = 3;  (written X = Y, Y = 3) 
+X = 3, Y = 4;
+X = 3, Y = 5;
+X = 4, Y = 1;
+X = 5, Y = 0;
+*/
+
+?- query([each(1,X,20), find(0,Y,19), Y, +, 1, =, X]).
+
+/* expected result:
+true ;
+false.
+*/
+
+?- query([each(0,X,20), find(0,Y,20), 
+      [Y, +, Y, =, X, '||', Y, +, Y, =, X, +, 1]]).
+
+/* expected result:
+true;
+false
+*/
+
+?- query([find(0,X,10), each(0,Y,20), Y, *, X, =, Y]).
+
+/* expected result:
+X = 1 ;
+false.
+*/
+
+
+?- query([find(2,P,40), each(2,X,P), each(2,Y,P), 
+            [X, *, Y, <, P, '||', P, <, X, *, Y]]).
+
+/* expected result:
+P = 2;
+P = 3;
+P = 5;
+P = 7;
+P = 11;
+P = 13;
+P = 17;
+P = 19;
+P = 23;
+P = 29;
+P = 31;
+P = 37;
+false.
+/*

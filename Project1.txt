@@ -1,0 +1,274 @@
+(* INTERPRETER FOR A SMALL INTERACTIVE HIGHER-ORDER CALCULATOR 
+      CIS505/705, K-State, Fall 2022 *)
+
+(*
+
+This is a skeleton, with 9 lines where code needs to be changed/inserted.
+Each such line is marked with "CHANGE #k" where k is a number,
+indicating the suggested order in which to make the changes.
+
+Even the current skeleton enables the user to
+  + display the top of the stack
+  + display the full stack
+  + exit the calculator
+
+The 9 tasks are
+
+ #1 === Enter a number
+  
+this will allow the dialogue:
+ ? 28
+ ? 17
+ ? D
+Stack (top first): 17 , 28
+
+  #2 === Make a copy of the top of the stack
+
+this will allow the dialogue:
+  
+? 27 
+? 39
+? C
+? D
+Stack (top first): 39 , 39 , 27
+
+  #3 === Apply the current function to the top of the stack
+      replacing it with the result
+
+this will allow (since multiplication is implemented) the dialogue 
+
+? 17
+? 7
+? *
+? A
+? D
+Stack (top first): 119
+
+  #4 === Create a function that adds a number
+
+this will allow the dialogue:
+
+? 8
+? +
+? 7
+? A
+? D
+Stack (top first): 15
+
+  #5 === Create a function that subtracts a number
+
+this will allow the dialogue:
+
+? 5
+? -
+? 8
+? A
+? D
+Stack (top first): 3
+
+  #6 === Retrieve a function from the dictionary
+  #7 === Update the dictionary 
+
+these will allow the dialogue:
+
+? 7
+? *
+? S
+the current function should be stored under which name?
+times7
+? 1
+? +
+? 3
+? A
+? D
+Stack (top first): 4
+? R
+what is the name of the function to be retrieved?
+times7
+? 8
+? A
+? D
+Stack (top first): 56 , 4
+
+  #8  ===
+     Replace the top of the function stack by the result of iterating it
+       as many times as indicated by the top of the number stack
+        (if that number is negative, an error should be reported!)
+      The function 'repeat', cf. Lab 1, has been provided.
+
+this will allow the dialogue:
+
+? 2
+? +
+? 3
+? I
+? 5
+? A
+? D
+Stack (top first): 11
+
+  #9  ===Wrap a named function around the current function, 
+           as described in the question text.
+
+this will allow the last dialogue mentioned in the question text.
+
+You should develop your interpreter incrementally, 
+and make sure that each new change type checks! 
+(If you do not type check until you have made all the required changes,
+it is rather likely that you'll get a bunch of error messages 
+that may be very hard to understand and fix.)
+
+*)
+
+(* EXCEPTIONS FOR ERRORS *)
+
+exception IllformedInput
+exception EmptyStack
+exception KeyNotFound
+exception RepeatNegative
+
+(* EXCEPTIONS FOR SIDE EFFECTS *)
+
+exception Exit
+exception TopStack
+exception DisplayStack
+
+(* AUXILIARY FUNCTIONS *)
+
+let rec repeat n f = fun x ->
+   if n = 0
+   then x
+   else repeat (n-1) f (f x)
+
+(* DICTIONARY OPERATIONS *)
+
+let initDict = fun key -> raise KeyNotFound
+
+let lookupDict dictionary key =
+   dictionary key
+
+let updateDict new_key new_val dictionary =
+   fun key -> 
+    if key = new_key
+    then new_val
+    else dictionary key (* CHANGED *)
+
+(* DECOMPOSING THE STACK *)
+
+let top_of stack =
+   match stack with
+    | [] -> raise EmptyStack
+    | n :: stack' -> n
+
+let rest_of stack =
+   match stack with
+    | [] -> raise EmptyStack
+    | n :: stack' -> stack'
+
+(* INTERPRETING THE INPUT *)
+
+let get_number str = 
+  let rec get_num str acc = 
+    if str = "" 
+    then acc
+    else 
+      let c = String.get str 0 and 
+          str' = String.sub str 1 (String.length str - 1) in
+      let d =  Char.code c  - Char.code '0' in
+      if d >= 0 && d < 10 
+      then 
+        let m =
+          match acc with
+           | None -> d
+           | Some n -> 10 * n + d
+        in get_num str' (Some m)
+      else acc
+  in get_num str None
+
+
+(* THE READ-EVAL-PRINT LOOP *)
+
+(* interpret: 
+      int list                  Stack of Numbers
+   -> (int -> int)              Current Function
+   -> (string -> (int -> int))  Dictionary of Functions
+   ->  unit                     
+ *)
+
+let rec interpret stack curf dict =  
+     (* READ, AND THEN EVAL BASED ON WHAT IS READ *)
+  (print_string "? " ;
+   let inp = read_line () in
+   try 
+    (match inp with
+     | "A" -> 
+          interpret (curf(top_of stack) :: (rest_of stack)) curf dict (* CHANGED *)
+     | "C" -> 
+          let n = top_of stack in
+          interpret (n :: n :: (rest_of stack)) curf dict (* CHANGED *)
+     | "D" -> raise DisplayStack
+     | "I" -> 
+          let n = top_of stack in
+          if (n >= 0)
+          then interpret (rest_of stack) (repeat n curf) dict (* CHANGED *)
+          else 
+          raise RepeatNegative
+     | "R" -> 
+          (print_string "what is the name of the function to be retrieved?\n";
+            let str = read_line () in
+            interpret stack (lookupDict dict str) dict (* CHANGED *)
+          )
+     | "S" -> 
+          (print_string "the current function should be stored under which name?\n";
+            let str = read_line () in
+            interpret stack curf (updateDict str curf dict)
+          )
+     | "T" -> raise TopStack 
+     | "W" ->
+          (print_string "what is the name of the function to wrap around the current function?\n";
+            let str = read_line () in
+            let wrapFunction = (lookupDict dict str) in
+            interpret stack (fun x -> (wrapFunction(curf(x)))) (* CHANGED *) dict 
+          )
+     | "X" -> raise Exit
+     | "+" -> 
+          interpret (rest_of stack) ((+)(top_of stack)) dict (* CHANGED *)
+     | "*" -> 
+          interpret (rest_of stack) (( * ) (top_of stack)) dict
+     | "-" -> 
+          interpret (rest_of stack) (fun m -> (-) m (top_of stack)) dict (* CHANGED *)
+     | _ -> 
+        (match get_number inp with
+         | Some n -> interpret (n::stack) curf dict (* CHANGED *)
+         | None -> raise IllformedInput)
+    ) with Exit ->
+         (print_string "Thanks for using the CIS505/705 calculator! Bye\n"; 
+            ())
+    |   excp ->
+          (print_string
+            (match excp with
+              | TopStack ->
+                  (match stack with
+                    | [] -> "Stack is empty\n"
+                    | n :: _ -> "Top of stack: "^(Int.to_string n)^"\n")
+              | DisplayStack -> 
+                  "Stack (top first): "^
+                  (String.concat " , " (List.map Int.to_string stack))^"\n"
+              | IllformedInput -> "Input ill-formed\n"
+              | EmptyStack -> "Stack is empty\n"
+              | KeyNotFound -> "Identifier not found in dictionary\n"
+              | RepeatNegative -> "Iterate called on negative number\n"
+              | _ -> " *** redundant ***\n");
+            interpret stack curf dict)
+  )
+
+(* INVOCATION *)
+ (* run: unit -> unit *)
+
+let run () = 
+  (print_string "The CIS505/705 Calculator is ready!\n";
+    interpret        (* initially,                   *)
+      []             (* number stack is empty        *)
+      (fun x -> x)   (* current function is identity *)
+      initDict       (* dictionary is empty          *)
+   )
